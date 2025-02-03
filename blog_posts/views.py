@@ -1,15 +1,45 @@
+import bcrypt
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from .models import User, Post, Comment
+from django.contrib.auth.models import User
 from .serializers import UserSerializer, PostSerializer, CommentSerializer
+from django.contrib.auth.hashers import make_password, check_password 
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsPostAuthor
+from rest_framework.authentication import TokenAuthentication
+
+
 
 
 class UserListCreate(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
+
+        user = User.objects.create_user(username="new_user", password="secure_pass123")
+        print(user.password)  # Outputs a hashed password
+        
+        # Verifying the hashed password
+        isPasswordValid = check_password("mypassword123", user.password)
+        print('Is the password valid? ', isPasswordValid)  # Outputs True if the password matches
+        # Verify a password
+        passwordToVerify = b'password1234'
+
+         #Salting
+        password = b'password1234'
+        salt = bcrypt.gensalt()
+        #hashWithSaltPassword = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        hashWithSaltPassword = bcrypt.hashpw(password, salt)
+        print('Hash with salt password is: ', hashWithSaltPassword)
+
+        if bcrypt.checkpw(passwordToVerify, hashWithSaltPassword):
+            print("Password is correct")
+        else:
+            print("Invalid password")
+
         return Response(serializer.data)
 
 
@@ -19,6 +49,25 @@ class UserListCreate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class PostDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsPostAuthor]
+
+
+    def get(self, request, pk):
+        post = Post.objects.get(pk=pk)
+        self.check_object_permissions(request, post)
+        return Response({"content": post.content})
+
+class ProtectedView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self, request):
+        return Response({"message": "Authenticated!"})
 
 
 class PostListCreate(APIView):
