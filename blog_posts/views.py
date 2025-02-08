@@ -1,4 +1,6 @@
+import json
 import bcrypt
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -19,16 +21,20 @@ class UserListCreate(APIView):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
 
-        user = User.objects.create_user(username="new_user", password="secure_pass123")
+        hashed_password = make_password("mypassword123")
+        print(hashed_password)  # Outputs a  hashed version of the password
+
+
+        user = User.objects.create_user(username="new_user", hashed_password="secure_pass123")
         print(user.password)  # Outputs a hashed password
         
         # Verifying the hashed password
-        isPasswordValid = check_password("mypassword123", user.password)
+        isPasswordValid = check_password("mypassword123", hashed_password)
         print('Is the password valid? ', isPasswordValid)  # Outputs True if the password matches
         # Verify a password
         passwordToVerify = b'password1234'
 
-         #Salting
+         #Saltingx
         password = b'password1234'
         salt = bcrypt.gensalt()
         #hashWithSaltPassword = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
@@ -99,7 +105,7 @@ class CommentListCreate(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+''' 
 @csrf_exempt
 def update_user(request, id):
     if request.method == 'PUT':
@@ -124,3 +130,4 @@ def delete_user(request, id):
             return JsonResponse({'message': 'User deleted successfully'}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+'''
