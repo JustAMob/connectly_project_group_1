@@ -1,16 +1,18 @@
 from django.contrib import admin
-from django.urls import path, include
-from django.shortcuts import render
-
-from django.shortcuts import render
-
-def home(request):
-    return render(request, 'home.html')
+from django.urls import path, include  # 'include' is needed to link app URLs
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.http import HttpResponseRedirect
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),  # Admin panel
-    path('api-auth/', include('rest_framework.urls')),  # API authentication
-    path('posts/', include('blog_posts.urls')),  # Routes for blog_posts app
-    path('', home, name='home'),  # Root URL
+    path('admin/', admin.site.urls),
+
+    # Include blog_posts app URLs
+    path('api/', include('blog_posts.urls')),  # This will route all blog_posts URLs
+
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # JWT Authentication endpoints
+    path('', lambda request: HttpResponseRedirect('/api/')), 
 ]
