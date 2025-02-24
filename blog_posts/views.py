@@ -11,9 +11,9 @@ from .serializers import (
     UserSerializer, 
     UserRegisterSerializer, 
     PostSerializer, 
-    CommentSerializer
+    CommentSerializer,
+    UserUpdateSerializer
 )
-from .permissions import IsPostAuthor
 from blog_posts import serializers
 
 # User ViewSet
