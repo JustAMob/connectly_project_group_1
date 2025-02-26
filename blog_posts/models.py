@@ -21,35 +21,35 @@ class User(AbstractUser):
     )
 
     def save(self, *args, **kwargs):
-        # Hash the password using Argon2 if it hasn't been hashed yet
-        if not self.password.startswith('argon2'):
-            ph = PasswordHasher()
-            self.password = ph.hash(self.password)
-        super().save(*args, **kwargs)  # Proceed with the save
+        if self.pk is None or not User.objects.get(pk=self.pk).password == self.password:
+            self.set_password(self.password)  # Preferred Django way
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.username
 
 # Signal to automatically add a newly created user to a group
-@receiver(post_save, sender=User)
 def assign_user_to_group(sender, instance, created, **kwargs):
-    if created:  # Check if the user is being created
-        # Set the group name based on the user type (regular or admin)
-        group_name = 'Regular User'  # Default group for regular users
-        if instance.is_superuser:
-            group_name = 'Admin'  # If user is superuser, assign them to Admin group
+    if created:
+        group_name = 'Admin' if instance.is_superuser else 'Regular User'
+        try:
+            group = Group.objects.get(name=group_name)
+            instance.groups.add(group)
+        except Group.DoesNotExist:
+            pass
 
-        # Get the group by name
-        group = Group.objects.get(name=group_name)
-        
-        # Add the user to the group
-        instance.groups.add(group)
+post_save.connect(assign_user_to_group, sender=User)  # Registering the signal
 
 # Post Model
 class Post(models.Model):
     content = models.TextField()
     author = models.ForeignKey(User, related_name='posts', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
         return f"Post by {self.author.username} at {self.created_at}"
